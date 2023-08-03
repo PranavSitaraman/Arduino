@@ -1,85 +1,68 @@
 #include <Arduino.h>
 #include <ArduinoMqttClient.h>
 #include <WiFi.h>
-
-///////please enter your sensitive data in the Secret tab/arduino_secrets.h
-char ssid[] = "ssid";        // your network SSID (name)
-char pass[] = "password";    // your network password (use for WPA, or use as key for WEP)
-
+char ssid[] = "ssid";        // network SSID
+char pass[] = "password";    // network password
 WiFiClient wifiClient;
 MqttClient mqttClient(wifiClient);
-
-const char broker[] = "192.168.114.165";
-int        port     = 1883;
-
+const char broker[] = "mqtt.eclipseprojects.io";
+int port = 1883;
 int count = 0;
-
-void onMqttMessage(int messageSize) {
-  // we received a message, print out the topic and contents
-  Serial.print("Topic: ");
-  Serial.println(mqttClient.messageTopic());
+void onMqttMessage(int messageSize)
+{
+  Serial.print("Topic: '");
+  Serial.print(mqttClient.messageTopic());
   Serial.print("', length ");
   Serial.print(messageSize);
-  Serial.println(" bytes:");
-
-  // use the Stream interface to print the contents
-  while (mqttClient.available()) {
+  Serial.print(", bytes: '");
+  while (mqttClient.available())
+  {
     Serial.print((char)mqttClient.read());
   }
-  Serial.println();
-  Serial.println();
+  Serial.println("'");
 }
-
-void setup() {
-  //Initialize serial and wait for port to open:
+void setup()
+{
   Serial.begin(9600);
-  while (!Serial) {
-    ; // wait for serial port to connect. Needed for native USB port only
-  }
-  Serial.print("Connecting to WiFi");
+  while (!Serial);
   WiFi.begin(ssid, pass, 6);
-  while (WiFi.status() != WL_CONNECTED) {
-    delay(100);
+  Serial.print("Connecting to WiFi");
+  while (WiFi.status() != WL_CONNECTED)
+  {
     Serial.print(".");
+    delay(100);
   }
-  Serial.println(" Connected!");
-  Serial.println("You're connected to the network");
   Serial.println();
-
-  Serial.print("Attempting to connect to the MQTT broker: ");
-  Serial.println(broker);
-
-  if (!mqttClient.connect(broker, port)) {
-    Serial.print("MQTT connection failed! Error code = ");
-    Serial.println(mqttClient.connectError());
-
+  Serial.println("WiFi Connected");
+  Serial.println("Connecting to MQTT Broker");
+  if (!mqttClient.connect(broker, port))
+  {
+    Serial.print("MQTT connection failed!");
     while (1);
   }
-
-  Serial.println("You're connected to the MQTT broker!");
-  Serial.println();
+  Serial.println("MQTT Connected");
   mqttClient.onMessage(onMqttMessage);
   for (int i = 0; i < 100; i++)
   {
     volatile unsigned long currentMillis = millis();
     mqttClient.subscribe("topic");
     volatile unsigned long subscribe = millis() - currentMillis;
-    Serial.print("Subscribe time: ");
-    Serial.println(subscribe/1000.0);
+    Serial.print("Subscribe time (ms): ");
+    Serial.println(subscribe);
   }
-  mqttClient.beginMessage("topic1");
-  mqttClient.print("test1");
-  mqttClient.endMessage();
-
-  mqttClient.beginMessage("topic2");
-  mqttClient.print("test2");
-  mqttClient.endMessage();
-
-  mqttClient.beginMessage("topic3");
-  mqttClient.print("test3");
-  mqttClient.endMessage();
+  mqttClient.subscribe("topic1");
+  for (int i = 0; i < 100; i++)
+  {
+    volatile unsigned long currentMillis = millis();    
+    mqttClient.beginMessage("topic1");
+    mqttClient.print("test1");
+    mqttClient.endMessage();
+    volatile unsigned long publish = millis() - currentMillis;
+    Serial.print("Publish time (ms): ");
+    Serial.println(publish);
+  }
 }
-
-void loop() {
+void loop()
+{
   mqttClient.poll();
 }
