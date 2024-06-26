@@ -39,6 +39,10 @@ void loop()
     Serial.println(text);
     duck.sendData(topics::status, text.c_str());
     delay(10);
+    String message = "Third 9";
+    uint8_t buffer[256];
+    memcpy(buffer, message.c_str(), message.length());
+    SerialBT.write(buffer, message.length());
   }
   duck.run();
 }
